@@ -1,4 +1,4 @@
-(function (window, console, L, Promise) {
+(function (window, console, L, Promise, blobUtil) {
     'use strict';
     L.TileLayer.prototype.options.useCache = false;
     L.TileLayer.prototype.options.saveToCache = true;
@@ -105,7 +105,7 @@
                             blobUtil.base64StringToBlob(data.d).then(function (blob) {
                                 resolve(blob);
                             }).catch(function (err) {
-                                console.log(err);
+                                reject(err);
                             });
                         }
                     }
@@ -344,4 +344,4 @@
         }
 
     });
-}(this, this.console, this.L, this.Promise));
+}(this, this.console, this.L, this.Promise, this.blobUtil));
