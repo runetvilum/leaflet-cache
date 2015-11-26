@@ -11,39 +11,34 @@
 
         createTile: function (coords, done) {
             var tile = document.createElement('img');
-
-            //L.DomEvent.on(tile, 'load', L.bind(this._tileOnLoad, this, done, tile));
             L.DomEvent.on(tile, 'error', L.bind(this._tileOnError, this, done, tile));
-
             if (this.options.crossOrigin) {
                 tile.crossOrigin = '';
             }
-
-            /*
-             Alt tag is set to empty string to keep screen readers from reading URL and for compliance reasons
-             http://www.w3.org/TR/WCAG20-TECHS/H67
-            */
             tile.alt = '';
-
-            var tileUrl = this.getTileUrl(coords);
-
-            this._loadTileBlob(tileUrl).then(function (data) {
-                return this._onCacheLookup(tileUrl, data);
-            }.bind(this)).then(function (blob) {
-                tile.onload = function (ev) {
-                    URL.revokeObjectURL(blob);
-                    this._tileOnLoad(done, ev.target);
-                }.bind(this);
-                tile.src = URL.createObjectURL(blob);
-            }.bind(this)).catch(function (err) {
+            if (this.options.useCache) {
+                var tileUrl = this.getTileUrl(coords);
+                this._loadTileBlob(tileUrl).then(function (data) {
+                    return this._onCacheLookup(tileUrl, data);
+                }.bind(this)).then(function (blob) {
+                    tile.onload = function (ev) {
+                        URL.revokeObjectURL(blob);
+                        this._tileOnLoad(done, ev.target);
+                    }.bind(this);
+                    tile.src = URL.createObjectURL(blob);
+                }.bind(this)).catch(function (err) {
+                    L.DomEvent.on(tile, 'load', L.bind(this._tileOnLoad, this, done, tile));
+                    //tile.src = tileUrl;
+                    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+                        tile.src = L.Util.emptyImageUrl;
+                    } else {
+                        tile.src = 'img/empty.png';
+                    }
+                }.bind(this));
+            } else {
                 L.DomEvent.on(tile, 'load', L.bind(this._tileOnLoad, this, done, tile));
-                //tile.src = tileUrl;
-                if (navigator.userAgent.indexOf('Chrome') !== -1) {
-                    tile.src = L.Util.emptyImageUrl;
-                } else {
-                    tile.src = 'img/empty.png';
-                }
-            }.bind(this));
+                tile.src = this.getTileUrl(coords);
+            }
             return tile;
         },
 
@@ -341,4 +336,4 @@
         }
 
     });
-}(this, this.console, this.L, this.Promise, this.blobUtil));
+} (this, this.console, this.L, this.Promise, this.blobUtil));
