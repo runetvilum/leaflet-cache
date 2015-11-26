@@ -39,7 +39,7 @@
                 L.DomEvent.on(tile, 'load', L.bind(this._tileOnLoad, this, done, tile));
                 //tile.src = tileUrl;
                 if (navigator.userAgent.indexOf('Chrome') !== -1) {
-                  tile.src =  L.Util.emptyImageUrl;
+                    tile.src = L.Util.emptyImageUrl;
                 } else {
                     tile.src = 'img/empty.png';
                 }
@@ -52,7 +52,7 @@
             if (this.options.useCache) {
                 return this._db.get('cache', tileUrl);
             }
-            return Promise.reject();
+            return Promise.resolve(null);
         },
         _getOnlineTile: function (tileUrl) {
             return new Promise(function (resolve, reject) {
@@ -117,21 +117,18 @@
                     } else {
                         // Online, not cached, request the tile normally
                         // console.log('Requesting tile normally', tileUrl);
-
-                        if (this.options.saveToCache) {
-                            this._getOnlineTile(tileUrl).then(function (blob) {
+                        this._getOnlineTile(tileUrl).then(function (blob) {
+                            if (this.options.saveToCache) {
                                 if (navigator.userAgent.indexOf('Chrome') !== -1) {
                                     this._saveBlob(tileUrl, blob);
                                 } else {
                                     this._saveBase64(tileUrl, blob);
                                 }
-                                resolve(blob);
-                            }.bind(this)).catch(function () {
-                                reject();
-                            });
-                        } else {
+                            }
+                            resolve(blob);
+                        }.bind(this)).catch(function () {
                             reject();
-                        }
+                        });
                     }
                 }
             }.bind(this));
@@ -314,11 +311,11 @@
                     exist: true
                 });
             }.bind(this)).then(function (blob) {
-              if (navigator.userAgent.indexOf('Chrome') !== -1) {
-                  return this._saveBlob(url, blob);
-              } else {
-                  return this._saveBase64(url, blob);
-              }
+                if (navigator.userAgent.indexOf('Chrome') !== -1) {
+                    return this._saveBlob(url, blob);
+                } else {
+                    return this._saveBase64(url, blob);
+                }
             }.bind(this)).then(function () {
                 this.fire('seedprogress', {
                     bbox: seedData.bbox,
