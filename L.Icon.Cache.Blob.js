@@ -1,5 +1,5 @@
 L.Icon.prototype.options = L.Icon.prototype.options || {};
-L.Icon.prototype.options.useCache = true;
+L.Icon.prototype.options.useCache = false;
 L.Icon.prototype.options.saveToCache = true;
 L.Icon.prototype.options.useOnlyCache = false;
 L.Icon.prototype.options.cacheMaxAge = 24 * 3600 * 1000;
@@ -8,44 +8,29 @@ L.Icon.prototype.options.cacheMaxAge = 24 * 3600 * 1000;
 L.Icon.include({
 
     _createImg: function (src, el) {
-
-
         el = el || document.createElement('img');
-        if (navigator.userAgent.indexOf('Chrome') !== -1) {
-          el.src =  L.Util.emptyImageUrl;
+        if (this.options.useCache) {
+            if (navigator.userAgent.indexOf('Chrome') !== -1) {
+                el.src = L.Util.emptyImageUrl;
+            } else {
+                el.src = 'img/empty.png';
+            }
+            this._db.get('cache', src).then(function (data) {
+                return this._onCacheLookup(src, data);
+            }.bind(this)).then(function (blob) {
+                el.onload = function (ev) {
+                    URL.revokeObjectURL(blob);
+                };
+                el.src = URL.createObjectURL(blob);
+            }).catch(function (err) {
+                console.log(err);
+            }.bind(this));
         } else {
-            el.src = 'img/empty.png';
+            el.src = src;
         }
-
-
-
-
-
-
-
-        this._loadTileBlob(src).then(function (data) {
-            return this._onCacheLookup(src, data);
-        }.bind(this)).then(function (blob) {
-            el.onload = function (ev) {
-                URL.revokeObjectURL(blob);
-            };
-            el.src = URL.createObjectURL(blob);
-        }).catch(function (err) {
-            console.log(err);
-
-            //el.src = src;
-        }.bind(this));
         return el;
     },
 
-
-
-    _loadTileBlob: function (tileUrl) {
-        if (this.options.useCache) {
-            return this._db.get('cache', tileUrl);
-        }
-        return Promise.reject();
-    },
     _getOnlineTile: function (tileUrl) {
         return new Promise(function (resolve, reject) {
             var xhr = new XMLHttpRequest();
