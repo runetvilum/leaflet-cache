@@ -15,7 +15,7 @@ L.Icon.include({
             } else {
                 el.src = 'img/empty.png';
             }
-            this._db.get('cache', src).then(function (data) {
+            this._db.get('data', src).then(function (data) {
                 return this._onCacheLookup(src, data);
             }.bind(this)).then(function (blob) {
                 el.onload = function (ev) {
@@ -121,7 +121,7 @@ L.Icon.include({
             d: blob,
             t: Date.now()
         };
-        this._db.put('cache', doc);
+        this._db.put('data', doc);
     },
     _saveBase64: function (tileUrl, blob) {
         blobUtil.blobToBase64String(blob).then(function (base64String) {
@@ -131,7 +131,7 @@ L.Icon.include({
                 t: Date.now()
             };
 
-            this._db.put('cache', doc);
+            this._db.put('data', doc);
         }.bind(this)).catch(function (err) {
             console.log(err);
         });

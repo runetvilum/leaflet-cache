@@ -45,7 +45,7 @@
 
         _loadTileBlob: function (tileUrl) {
             if (this.options.useCache) {
-                return this._db.get('cache', tileUrl);
+                return this._db.get('data', tileUrl);
             }
             return Promise.resolve(null);
         },
@@ -137,7 +137,7 @@
                     t: Date.now()
                 };
 
-                this._db.put('cache', doc);
+                this._db.put('data', doc);
             }.bind(this)).catch(function (err) {
                 console.log(err);
             });
@@ -151,7 +151,7 @@
                 t: Date.now()
             };
 
-            this._db.put('cache', doc);
+            this._db.put('data', doc);
         },
 
         // Seeds the cache given a bounding box (latLngBounds), and
@@ -298,7 +298,7 @@
 
             var url = remaining.pop();
 
-            this._db.get('cache', url).then(function (data) {
+            this._db.get('data', url).then(function (data) {
                 if (!data || (data && Date.now() > data.t + this.options.cacheMaxAge)) {
                     return this._getOnlineTile(url);
                 }
