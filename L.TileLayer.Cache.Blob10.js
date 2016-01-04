@@ -269,14 +269,14 @@
             return {
                 type: 'Feature',
                 geometry: this.tileToGeoJSON(t),
-                properties: {x:t[0],y:t[1],z:t[2]}
+                properties: { x: t[0], y: t[1], z: t[2] }
             };
         },
         tileToGeoJSON: function (tile) {
-            var ne = this._map.unproject(L.point(tile[0], tile[1]+1).multiplyBy(256),tile[2]);
-            var nw = this._map.unproject(L.point(tile[0]+1, tile[1]+1).multiplyBy(256),tile[2]);
-            var sw = this._map.unproject(L.point(tile[0]+1, tile[1]).multiplyBy(256),tile[2]);
-            var se = this._map.unproject(L.point(tile[0], tile[1]).multiplyBy(256),tile[2]);
+            var ne = this._map.unproject(L.point(tile[0], tile[1] + 1).multiplyBy(256), tile[2]);
+            var nw = this._map.unproject(L.point(tile[0] + 1, tile[1] + 1).multiplyBy(256), tile[2]);
+            var sw = this._map.unproject(L.point(tile[0] + 1, tile[1]).multiplyBy(256), tile[2]);
+            var se = this._map.unproject(L.point(tile[0], tile[1]).multiplyBy(256), tile[2]);
             var poly = {
                 type: 'Polygon',
                 coordinates:
@@ -491,8 +491,37 @@
                 y = ((xy - x) / dim) % dim;
             return [x, y, z];
         },
+        getTileUrlFromPoint: function (coords) {
+            return L.Util.template(this._url, L.extend({
+                r: this.options.detectRetina && L.Browser.retina && this.options.maxZoom > 0 ? '@2x' : '',
+                s: this._getSubdomain(coords),
+                x: coords.x,
+                y: this.options.tms ? this._globalTileRange.max.y - coords.y : coords.y,
+                z: coords.z
+            }, this.options));
+        },
+        seedTiles: function (zooms) {
+            this.stop = false;
+            if (!zooms) return;
+            if (!this._map) return;
+            var queue = [];
+            for (var z in zooms) {
+                var tiles = zooms[z];
+                for (var i = 0; i < tiles.length; i++) {
+                    var tile = tiles[i];
+                    var point = new L.Point(tile[0], tile[1]);
+                    point.z = tile[2];
+                    queue.push(this.getTileUrlFromPoint(point));
+                }
+            }
 
-
+            var seedData = {
+                queueLength: queue.length,
+                errors: 0
+            }
+            this.fire('seedstart', seedData);
+            this._seedOneTile(queue, seedData);
+        },
 
 
         seed: function (bbox, minZoom, maxZoom) {
@@ -523,9 +552,6 @@
             }
 
             var seedData = {
-                bbox: bbox,
-                minZoom: minZoom,
-                maxZoom: maxZoom,
                 queueLength: queue.length,
                 errors: 0
             }
@@ -533,9 +559,11 @@
             this._seedOneTile(queue, seedData);
         },
 
-
+        _stop: function () {
+            this.stop = true;
+        },
         _seedOneTile: function (remaining, seedData) {
-            if (!remaining.length) {
+            if (!remaining.length || this.stop) {
                 this.fire('seedend', seedData);
                 return;
             }
@@ -558,9 +586,6 @@
                 }
             }.bind(this)).then(function () {
                 this.fire('seedprogress', {
-                    bbox: seedData.bbox,
-                    minZoom: seedData.minZoom,
-                    maxZoom: seedData.maxZoom,
                     queueLength: seedData.queueLength,
                     remainingLength: remaining.length,
                     errors: seedData.errors
@@ -568,9 +593,6 @@
                 this._seedOneTile(remaining, seedData);
             }.bind(this), function (err) {
                 this.fire('seedprogress', {
-                    bbox: seedData.bbox,
-                    minZoom: seedData.minZoom,
-                    maxZoom: seedData.maxZoom,
                     queueLength: seedData.queueLength,
                     remainingLength: remaining.length,
                     errors: (err && err.exist) ? 0 : 1
